@@ -63,7 +63,6 @@ function App() {
   //product adder
   //username:telaynew11@gmail.com
   //password:Telaynew1,
-
   return (
     <Router>
       <div className='app-whole-div'>
