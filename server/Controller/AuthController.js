@@ -204,14 +204,24 @@ const loginUser = async (req, res) => {
         {},
         (err, token) => {
           if (err) throw err
+          console.log(
+            'Setting cookie with token:',
+            token.substring(0, 20) + '...'
+          )
+          console.log('Cookie settings:', {
+            httpOnly: true,
+            secure: true, // Always true for HTTPS (production)
+            sameSite: 'none',
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+          })
+
           res
             .cookie('token', token, {
               httpOnly: true,
-              secure: process.env.NODE_ENV === 'production', // true in production (HTTPS)
+              secure: true, // Always true for HTTPS (production)
               sameSite: 'none', // Required for cross-origin requests
               maxAge: 24 * 60 * 60 * 1000, // 24 hours
-              domain:
-                process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
               path: '/',
             })
             .json(user)
@@ -304,12 +314,26 @@ const displayProducts = async (req, res) => {
 const getProfile = (req, res) => {
   const { token } = req.cookies
 
+  console.log('Profile request - cookies:', req.cookies)
+  console.log('Profile request - token:', token)
+
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET, {}, (err, user) => {
-      if (err) throw err
+      if (err) {
+        console.log('JWT verification error:', err)
+        res.clearCookie('token', {
+          httpOnly: true,
+          secure: true, // Always true for HTTPS (production)
+          sameSite: 'none',
+          path: '/',
+        })
+        return res.json('null')
+      }
+      console.log('Profile found for user:', user.email)
       res.json(user)
     })
   } else {
+    console.log('No token found in cookies')
     res.json('null')
   }
 }
@@ -325,7 +349,7 @@ const sellerProduct = async (req, res) => {
 const logOut = (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true, // Always true for HTTPS (production)
     sameSite: 'none',
     path: '/',
   })

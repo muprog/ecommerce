@@ -17,15 +17,21 @@ export function UserContextProvider({ children }) {
   const [processedArray, setProcessedArray] = useState([])
   const [uniqueArray, setUniqueArray] = useState([])
   useEffect(() => {
-    if (!user) {
-      axios
-        .get('/profile')
-        .then(({ data }) => {
+    // Only fetch profile once when component mounts
+    const fetchProfile = async () => {
+      try {
+        const { data } = await axios.get('/profile')
+        if (data && data.email) {
           setUser(data)
-        })
-        .catch((err) => console.log('err'))
+        }
+      } catch (err) {
+        console.log('Profile fetch error:', err)
+        // Don't set user to empty string on error, just log it
+      }
     }
-  }, [user])
+    
+    fetchProfile()
+  }, []) // Empty dependency array - only run once
   useEffect(() => {
     if (user && user.email) {
       const storedCartData = localStorage.getItem(`cartData_${user.email}`)

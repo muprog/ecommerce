@@ -10,7 +10,6 @@ MONGO_URL=mongodb://localhost:27017/your_database_name
 
 # Server Configuration
 PORT=5000
-NODE_ENV=production
 
 # JWT Configuration
 JWT_SECRET=your_jwt_secret_key_here
