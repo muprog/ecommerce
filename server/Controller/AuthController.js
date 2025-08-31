@@ -204,7 +204,17 @@ const loginUser = async (req, res) => {
         {},
         (err, token) => {
           if (err) throw err
-          res.cookie('token', token).json(user)
+          res
+            .cookie('token', token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production', // true in production (HTTPS)
+              sameSite: 'none', // Required for cross-origin requests
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours
+              domain:
+                process.env.NODE_ENV === 'production' ? undefined : undefined, // Let browser handle domain
+              path: '/',
+            })
+            .json(user)
         }
       )
     }
@@ -313,7 +323,12 @@ const sellerProduct = async (req, res) => {
 }
 
 const logOut = (req, res) => {
-  res.clearCookie('token')
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'none',
+    path: '/',
+  })
   res.json({ message: 'Logged out successfully' })
 }
 
