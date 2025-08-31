@@ -8,9 +8,11 @@ export default function Login() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [data, setData] = useState({ email: '', password: '' })
+  const [isLoading, setIsLoading] = useState(false)
   const handleSubmit = async (e) => {
     e.preventDefault()
     const { email, password } = data
+    setIsLoading(true)
     try {
       const { data } = await axios.post('/login', { email, password })
       //To get data from the database
@@ -44,6 +46,9 @@ export default function Login() {
       }
     } catch (error) {
       console.log(error)
+      toast.error('Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
   const handleInput = (e) => {
@@ -96,8 +101,14 @@ export default function Login() {
 
           <div className='login-lower-part'>
             <div>
-              <button type='submit' className='loginbtn'>
-                {t('login')}
+              <button type='submit' className='loginbtn' disabled={isLoading}>
+                {isLoading ? (
+                  <span>
+                    <i className='fas fa-spinner fa-spin'></i> Signing In...
+                  </span>
+                ) : (
+                  t('login')
+                )}
               </button>
             </div>
             <div className='forget-creat'>

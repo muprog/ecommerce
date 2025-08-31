@@ -129,6 +129,7 @@ export default function Register() {
   const { t } = useTranslation()
   const [isAgreed, setIsAgreed] = useState(false)
   const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState({
     fname: '',
     lname: '',
@@ -147,29 +148,38 @@ export default function Register() {
   // Function to handle OTP verification after it's sent
   const verifyOtp = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
     const { otp, fname, lname, email, password, phone, usertype, status } = data
 
-    const { data: response } = await axios.post('/verify-otp', {
-      otp,
-      email,
-      fname,
-      lname,
-      password,
-      phone,
-      usertype,
-      status,
-    })
+    try {
+      const { data: response } = await axios.post('/verify-otp', {
+        otp,
+        email,
+        fname,
+        lname,
+        password,
+        phone,
+        usertype,
+        status,
+      })
 
-    if (response.error) {
-      toast.error(response.error)
-    } else {
-      toast.success('Registration successful')
-      navigate('/login')
+      if (response.error) {
+        toast.error(response.error)
+      } else {
+        toast.success('Registration successful')
+        navigate('/login')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error('OTP verification failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const registerUser = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
     const {
       fname,
       lname,
@@ -181,22 +191,29 @@ export default function Register() {
       status,
     } = data
 
-    const { data: response } = await axios.post('/register', {
-      fname,
-      lname,
-      email,
-      password,
-      phone,
-      usertype,
-      confirmpassword,
-      status,
-    })
+    try {
+      const { data: response } = await axios.post('/register', {
+        fname,
+        lname,
+        email,
+        password,
+        phone,
+        usertype,
+        confirmpassword,
+        status,
+      })
 
-    if (response.error) {
-      toast.error(response.error)
-    } else {
-      setIsOtpSent(true)
-      toast.success('OTP sent to your email. Please verify.')
+      if (response.error) {
+        toast.error(response.error)
+      } else {
+        setIsOtpSent(true)
+        toast.success('OTP sent to your email. Please verify.')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error('Registration failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -333,9 +350,18 @@ export default function Register() {
 
           <button
             className={`form-input ${isOtpSent ? 'otp-submit' : 'submit'}`}
-            disabled={!isAgreed}
+            disabled={!isAgreed || isLoading}
           >
-            {isOtpSent ? 'Verify email' : t('register')}
+            {isLoading ? (
+              <span>
+                <i className='fas fa-spinner fa-spin'></i>
+                {isOtpSent ? 'Verifying...' : 'Creating Account...'}
+              </span>
+            ) : isOtpSent ? (
+              'Verify email'
+            ) : (
+              t('register')
+            )}
           </button>
         </div>
       </form>

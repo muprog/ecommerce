@@ -101,7 +101,7 @@ const registerUser = async (req, res) => {
     var transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'amarenibret292@gmail.com',
+        user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
         pass: process.env.EMAIL_PWD,
       },
     })
@@ -409,6 +409,17 @@ const sendOtp = async (req, res) => {
   const { email } = req.body
 
   try {
+    // Debug environment variables
+    console.log('Send OTP - Environment variables:', {
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_PWD: process.env.EMAIL_PWD ? '***SET***' : 'NOT SET',
+    })
+
+    // Validate email
+    if (!email) {
+      return res.json({ Status: 'Email is required' })
+    }
+
     // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString()
 
@@ -422,9 +433,15 @@ const sendOtp = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'amarenibret292@gmail.com',
+        user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
         pass: process.env.EMAIL_PWD,
       },
+    })
+
+    console.log('Send OTP - Email transporter configured with:', {
+      service: 'gmail',
+      user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
+      pass: process.env.EMAIL_PWD ? '***SET***' : 'NOT SET',
     })
 
     // Email options
@@ -435,17 +452,36 @@ const sendOtp = async (req, res) => {
       text: `Your OTP code is ${otp}. It will expire in 15 minutes.`,
     }
 
+    console.log('Send OTP - Mail options configured:', {
+      from: 'amarenibret292@gmail.com',
+      to: email,
+      subject: 'Your OTP Code',
+    })
+
     // Send OTP email
-    transporter.sendMail(mailOptions, (error) => {
+    console.log('Send OTP - Attempting to send email...')
+    transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error(error)
-        return res.status(500).json({ Status: 'Error sending OTP' })
+        console.error('Send OTP email error:', error)
+        console.error('Send OTP - Error details:', {
+          code: error.code,
+          command: error.command,
+          response: error.response,
+          responseCode: error.responseCode,
+        })
+        return res.status(500).json({
+          Status: 'Error sending OTP',
+          error: error.message,
+          details: error.code,
+        })
       }
+      console.log('Send OTP email sent successfully to:', email)
+      console.log('Send OTP - Email info:', info)
       res.json({ Status: 'Success' })
     })
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ Status: 'Error' })
+    console.error('Send OTP function error:', error)
+    res.status(500).json({ Status: 'Error', error: error.message })
   }
 }
 
@@ -604,7 +640,7 @@ const updateDeliveryStatus = async (req, res) => {
         var transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: 'amarenibret292@gmail.com',
+            user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
             pass: process.env.EMAIL_PWD,
           },
         })
@@ -632,7 +668,92 @@ const updateDeliveryStatus = async (req, res) => {
   }
 }
 
-const forgotPassword = (req, res) => {}
+const forgotPassword = async (req, res) => {
+  const { email } = req.body
+
+  try {
+    // Debug environment variables
+    console.log('Environment variables:', {
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_PWD: process.env.EMAIL_PWD ? '***SET***' : 'NOT SET',
+      MONGO_URL: process.env.MONGO_URL ? '***SET***' : 'NOT SET',
+    })
+
+    // Validate email
+    if (!email) {
+      return res.json({ Status: 'Email is required' })
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res.json({ Status: 'User not found' })
+    }
+
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString()
+
+    // Save OTP and expiration
+    await User.findOneAndUpdate(
+      { email },
+      { otp, otpExpires: Date.now() + 15 * 60 * 1000 } // OTP expires in 15 minutes
+    )
+
+    // Set up email transport
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
+        pass: process.env.EMAIL_PWD,
+      },
+    })
+
+    console.log('Email transporter configured with:', {
+      service: 'gmail',
+      user: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
+      pass: process.env.EMAIL_PWD ? '***SET***' : 'NOT SET',
+    })
+
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
+      to: email,
+      subject: 'Password Reset OTP',
+      text: `Your password reset OTP code is ${otp}. It will expire in 15 minutes.`,
+    }
+
+    console.log('Mail options configured:', {
+      from: process.env.EMAIL_USER || 'amarenibret292@gmail.com',
+      to: email,
+      subject: 'Password Reset OTP',
+    })
+
+    // Send OTP email
+    console.log('Attempting to send email...')
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Email sending error:', error)
+        console.error('Error details:', {
+          code: error.code,
+          command: error.command,
+          response: error.response,
+          responseCode: error.responseCode,
+        })
+        return res.status(500).json({
+          Status: 'Error sending OTP',
+          error: error.message,
+          details: error.code,
+        })
+      }
+      console.log('OTP email sent successfully to:', email)
+      console.log('Email info:', info)
+      res.json({ Status: 'Success' })
+    })
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    res.status(500).json({ Status: 'Error', error: error.message })
+  }
+}
 const resetPassword = (req, res) => {}
 
 // const createAdder = async (req, res) => {

@@ -54,7 +54,7 @@ function App() {
 
   //seller or owner
   //username:muprog4@gmail.com
-  //password:Adoni1,
+  //password:Adoniyas1,
 
   //buyer
   //username:adoniseid940@gmail.com

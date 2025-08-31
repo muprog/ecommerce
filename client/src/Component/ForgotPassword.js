@@ -52,37 +52,44 @@
 
 // ForgotPassword.js
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
-import '../style/loginAndRegister.css';
+import React, { useState } from 'react'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
+import '../style/loginAndRegister.css'
 
 export default function ForgotPassword() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
+    setIsLoading(true)
 
     try {
-      const response = await axios.post('/send-otp', { email });
+      const response = await axios.post('/forgot-password', { email })
       if (response.data.Status === 'Success') {
-        navigate(`/verify-otp1/${email}`);
+        toast.success('OTP sent successfully!')
+        navigate(`/verify-otp1/${email}`)
       } else {
-        toast.error(response.data.Status);
+        toast.error(response.data.Status)
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Error sending OTP');
+      console.error(error)
+      toast.error('Error sending OTP. Please check your email and try again.')
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className='whole-login'>
       <form onSubmit={handleSubmit} className='register-form'>
         <div className='login'>
-          <div><h2>Forgot Password</h2></div>
+          <div>
+            <h2>Forgot Password</h2>
+          </div>
           <div>
             <label className='form-label'>Email</label>
             <input
@@ -94,10 +101,18 @@ export default function ForgotPassword() {
             />
           </div>
           <div className='forget-creat'>
-            <button type='submit' className='send'>Send OTP</button>
+            <button type='submit' className='send' disabled={isLoading}>
+              {isLoading ? (
+                <span>
+                  <i className='fas fa-spinner fa-spin'></i> Sending OTP...
+                </span>
+              ) : (
+                'Send OTP'
+              )}
+            </button>
           </div>
         </div>
       </form>
     </div>
-  );
+  )
 }
